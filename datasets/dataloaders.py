@@ -60,6 +60,55 @@ def normal_train_dataloader(data_path,batch_size,transform_type):
     return loader
 
 
+
+def classification_train_dataloader(data_path,batch_size,transform_type,balanced=False):
+
+    dataset = get_dataset(data_path=data_path,is_training=True,transform_type=transform_type,pre=None)
+
+    if balanced:
+        targets = np.array(dataset.targets)
+        class_count = np.bincount(targets)
+        safe_class_count = np.where(class_count == 0, 1, class_count)
+        class_weights = class_count.sum()/(len(safe_class_count)*safe_class_count.astype(np.float32))
+        sample_weights = class_weights[targets]
+        sampler = torch.utils.data.WeightedRandomSampler(
+            torch.DoubleTensor(sample_weights),
+            len(sample_weights),
+            replacement=True)
+        loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=3,
+            pin_memory=False)
+        class_weights = torch.from_numpy(class_weights).float()
+    else:
+        loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=3,
+            pin_memory=False,
+            drop_last=False)
+        class_weights = torch.ones(len(dataset.classes)).float()
+
+    return loader,class_weights
+
+
+def classification_eval_dataloader(data_path,batch_size,transform_type):
+
+    dataset = get_dataset(data_path=data_path,is_training=False,transform_type=transform_type,pre=None)
+
+    loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=3,
+        pin_memory=False)
+
+    return loader
+
+
 def image_loader(path,is_training,transform_type,pre):
 
     p = Image.open(path)

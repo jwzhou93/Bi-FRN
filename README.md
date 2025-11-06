@@ -40,10 +40,70 @@ The official link of CUB-200-2011 is [here](http://www.vision.caltech.edu/datase
 ```shell
     cd experiments/CUB_fewshot_cropped/BiFRN/Conv-4
     python ./test.py
-    
+
     cd experiments/CUB_fewshot_cropped/BiFRN/ResNet-12
     python ./test.py
 ```
+
+## Traffic sign anomaly classification
+
+The repository now includes end-to-end scripts for training and deploying a binary
+classifier on a traffic-sign dataset with a directory layout of:
+
+```
+dataset_root/
+├── train
+│   ├── abnormal
+│   └── normal
+└── val
+    ├── abnormal
+    └── normal
+```
+
+To train a model that handles the heavy class imbalance, run:
+
+```shell
+python experiments/traffic_sign/train_binary.py \
+  --data-root /path/to/dataset_root \
+  --output-dir outputs/traffic_sign \
+  --epochs 60 \
+  --batch-size 32
+```
+
+Alternatively, in keeping with the other experiment folders you can run the
+bundled shell script:
+
+```shell
+cd experiments/traffic_sign
+DATA_ROOT=/path/to/dataset_root ./train.sh
+```
+
+You can optionally set `OUTPUT_DIR` to change where checkpoints are written and
+append extra flags (for example `--resnet`) after the script invocation.
+
+The training script automatically applies a weighted sampler and class-weighted
+loss to upweight the rare abnormal samples. After training you can evaluate the
+best checkpoint on the validation set to obtain precision, recall and confusion
+matrix statistics via:
+
+```shell
+python experiments/traffic_sign/eval_binary.py \
+  --data-root /path/to/dataset_root \
+  --checkpoint outputs/traffic_sign/best_model.pth
+```
+
+Finally, single-image inference can be performed with:
+
+```shell
+python experiments/traffic_sign/predict_single.py \
+  --data-root /path/to/dataset_root \
+  --checkpoint outputs/traffic_sign/best_model.pth \
+  --image /path/to/sample.jpg
+```
+
+All three scripts accept a `--resnet` flag if you prefer the ResNet-12 backbone
+and expose additional arguments for fine-grained control of optimisation
+hyper-parameters.
 
 ## References
 
